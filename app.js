@@ -2,11 +2,11 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
+const env = require("dotenv").config().parsed;
 
 const _ = require("lodash");
 
 const app = express();
-const port = 3000;
 
 const postSchema = {
 	title: String,
@@ -15,7 +15,7 @@ const postSchema = {
 
 const Post = mongoose.model("Post", postSchema);
 // Connect to the database
-mongoose.connect("mongodb://127.0.0.1:27017/blogDB");
+mongoose.connect(env.MONGO_API);
 
 const post1 = new Post({
 	title: "Day 1",
@@ -84,7 +84,6 @@ app.get("/contact", (req, res) => {
 
 app.get("/posts/:postId", (req, res) => {
 	const requestedId = req.params.postId;
-	console.log(requestedId);
 	Post.findById(requestedId)
 		.then((post) => {
 			res.render("post", {
@@ -98,6 +97,7 @@ app.get("/posts/:postId", (req, res) => {
 });
 
 // Start the server
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
-	console.log(`Server is running on http://localhost:${port}`);
+	console.log(`Server is listening on port ${port}`);
 });

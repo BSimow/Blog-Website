@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "blog-website": "file:",
+    "dotenv": "^16.4.7",
     "lodash": "^4.17.21",
     "mongoose": "^8.9.5"
   }
