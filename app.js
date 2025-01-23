@@ -1,13 +1,28 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
+const mongoose = require("mongoose");
 
 const _ = require("lodash");
 
 const app = express();
 const port = 3000;
 
-posts = [];
+const postSchema = {
+	title: String,
+	content: String,
+};
+
+const Post = mongoose.model("Post", postSchema);
+// Connect to the database
+mongoose.connect("mongodb://127.0.0.1:27017/blogDB");
+
+const post1 = new Post({
+	title: "Day 1",
+	content: "This is the first day of my blog.",
+});
+
+const defaultPosts = [post1];
 
 const homeStartingContent =
 	"This is a simple blog website where you can add your daily blogs. You can add your blog by clicking on the compose button. You can also view the full blog by clicking on the read more button.";
@@ -23,24 +38,40 @@ app.set("view engine", "ejs");
 
 // Routes
 app.get("/", (req, res) => {
-	res.render("index", {
-		title: "Home",
-		content: homeStartingContent,
-		posts: posts,
-	});
+	Post.find({})
+		.then((posts) => {
+			if (posts.length === 0) {
+				Post.insertMany(defaultPosts).catch((err) => {
+					console.log(err);
+				});
+			}
+			res.render("index", {
+				title: "Home",
+				content: homeStartingContent,
+				posts: posts,
+			});
+		})
+		.catch((err) => {
+			res.send(err);
+		});
 });
 app.get("/compose", (req, res) => {
 	res.render("compose", { title: "Compose" });
 });
 
 app.post("/compose", (req, res) => {
-	const post = {
-		title: req.body.postTitle,
+	const post = new Post({
+		title: _.capitalize(req.body.postTitle),
 		content: req.body.postBody,
-	};
-
-	posts.push(post);
-	res.redirect("/");
+	});
+	post
+		.save()
+		.then(() => {
+			res.redirect("/");
+		})
+		.catch((err) => {
+			res.send(err);
+		});
 });
 
 app.get("/about", (req, res) => {
@@ -51,15 +82,19 @@ app.get("/contact", (req, res) => {
 	res.render("contact", { title: "Contact Us", content: contactUsContent });
 });
 
-app.get("/posts/:postName", (req, res) => {
-	const requestedTitle = _.lowerCase(req.params.postName);
-
-	posts.forEach((post) => {
-		const storedTitle = _.lowerCase(post.title);
-		if (storedTitle === requestedTitle) {
-			res.render("post", { title: storedTitle, content: post.content });
-		}
-	});
+app.get("/posts/:postId", (req, res) => {
+	const requestedId = req.params.postId;
+	console.log(requestedId);
+	Post.findById(requestedId)
+		.then((post) => {
+			res.render("post", {
+				title: _.capitalize(post.title),
+				content: post.content,
+			});
+		})
+		.catch((err) => {
+			res.send(err);
+		});
 });
 
 // Start the server
